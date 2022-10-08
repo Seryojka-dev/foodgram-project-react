@@ -1,10 +1,13 @@
 from django.contrib import admin
-
 from users.models import User
-from .models import (Favorite, Ingredient, IngredientAmount, Recipe,
-                     ShoppingCart, Subscribe, Tag, TagRecipe)
+
+from .models import (
+    Favorite, Ingredient, IngredientAmount, Recipe,
+    ShoppingCart, Subscription, Tag, TagRecipe,
+)
 
 
+@admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     list_display = ('username', 'email', 'id')
     search_fields = ('username', 'email')
@@ -22,6 +25,7 @@ class TagRecipeInline(admin.TabularInline):
     extra = 0
 
 
+@admin.register(Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
     list_display = ('name', 'measurement_unit')
     search_fields = ('name', )
@@ -29,6 +33,7 @@ class IngredientAdmin(admin.ModelAdmin):
     list_filter = ('name',)
 
 
+@admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
     list_display = ('name', 'color', 'slug')
     search_fields = ('name', )
@@ -36,6 +41,7 @@ class TagAdmin(admin.ModelAdmin):
     list_filter = ('name',)
 
 
+@admin.register(ShoppingCart)
 class ShoppingCartAdmin(admin.ModelAdmin):
     list_display = ('user', 'recipe', 'id')
     search_fields = ('user', )
@@ -43,6 +49,7 @@ class ShoppingCartAdmin(admin.ModelAdmin):
     list_filter = ('user',)
 
 
+@admin.register(Favorite)
 class FavoriteAdmin(admin.ModelAdmin):
     list_display = ('user', 'recipe')
     search_fields = ('user', )
@@ -50,6 +57,7 @@ class FavoriteAdmin(admin.ModelAdmin):
     list_filter = ('user',)
 
 
+@admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
     inlines = (IngredientAmountInline, TagRecipeInline,)
     list_display = ('name', 'author', 'cooking_time',
@@ -60,20 +68,13 @@ class RecipeAdmin(admin.ModelAdmin):
 
     def count_favorite(self, obj):
         return Favorite.objects.filter(recipe=obj).count()
+
     count_favorite.short_description = 'Число добавлений в избранное'
 
 
+@admin.register(Subscription)
 class SubscribeAdmin(admin.ModelAdmin):
     list_display = ('user', 'following')
     search_fields = ('user', )
     empty_value_display = '-пусто-'
     list_filter = ('user',)
-
-
-admin.site.register(ShoppingCart, ShoppingCartAdmin)
-admin.site.register(Favorite, FavoriteAdmin)
-admin.site.register(User, UserAdmin)
-admin.site.register(Subscribe, SubscribeAdmin)
-admin.site.register(Ingredient, IngredientAdmin)
-admin.site.register(Tag, TagAdmin)
-admin.site.register(Recipe, RecipeAdmin)

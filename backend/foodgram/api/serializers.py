@@ -1,51 +1,17 @@
 from django.shortcuts import get_object_or_404
 from djoser.serializers import UserCreateSerializer
 from drf_extra_fields.fields import Base64ImageField
+from recipes.models import (
+    Ingredient, IngredientAmount, Recipe, Tag, TagRecipe,
+)
+from .mixins import (
+    CommonSubscribedMixin, CommonRecipeMixin, CommonCountMixin,
+)
 from rest_framework import serializers
-
 from users.models import User
-from recipes.models import (Favorite, Ingredient, IngredientAmount, Recipe,
-                            ShoppingCart, Subscribe, Tag, TagRecipe)
 
 
-class CommonSubscribed(metaclass=serializers.SerializerMetaclass):
-    is_subscribed = serializers.SerializerMethodField()
-
-    def get_is_subscribed(self, obj):
-        request = self.context.get('request')
-        if request.user.is_anonymous:
-            return False
-        return Subscribe.objects.filter(
-                user=request.user, following__id=obj.id).exists()
-
-
-class CommonRecipe(metaclass=serializers.SerializerMetaclass):
-    is_favorited = serializers.SerializerMethodField()
-    is_in_shopping_cart = serializers.SerializerMethodField()
-
-    def get_is_favorited(self, obj):
-        request = self.context.get('request')
-        if request.user.is_anonymous:
-            return False
-        return Favorite.objects.filter(
-            user=request.user, recipe__id=obj.id).exists()
-
-    def get_is_in_shopping_cart(self, obj):
-        request = self.context.get('request')
-        if request.user.is_anonymous:
-            return False
-        return ShoppingCart.objects.filter(
-            user=request.user, recipe__id=obj.id).exists()
-
-
-class CommonCount(metaclass=serializers.SerializerMetaclass):
-    recipes_count = serializers.SerializerMethodField()
-
-    def get_recipes_count(self, obj):
-        return Recipe.objects.filter(author__id=obj.id).count()
-
-
-class RegistrationSerializer(UserCreateSerializer, CommonSubscribed):
+class RegistrationSerializer(UserCreateSerializer, CommonSubscribedMixin):
 
     class Meta:
         model = User
@@ -115,7 +81,7 @@ class ShoppingCartSerializer(serializers.Serializer):
 
 
 class RecipeSerializer(serializers.ModelSerializer,
-                       CommonRecipe):
+                       CommonRecipeMixin):
     author = RegistrationSerializer(read_only=True)
     tags = TagSerializer(many=True)
     ingredients = IngredientAmountSerializer(
@@ -131,7 +97,7 @@ class RecipeSerializer(serializers.ModelSerializer,
 
 
 class RecipeSerializerPost(serializers.ModelSerializer,
-                           CommonRecipe):
+                           CommonRecipeMixin):
     author = RegistrationSerializer(read_only=True)
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(),
@@ -200,7 +166,7 @@ class ShortRecipeSerializer(serializers.ModelSerializer):
 
 
 class SubscriptionSerializer(serializers.ModelSerializer,
-                             CommonSubscribed, CommonCount):
+                             CommonSubscribedMixin, CommonCountMixin):
     recipes = serializers.SerializerMethodField()
 
     class Meta:
@@ -210,10 +176,9 @@ class SubscriptionSerializer(serializers.ModelSerializer,
 
     def get_recipes(self, obj):
         request = self.context.get('request')
+        queryset = Recipe.objects.filter(author__id=obj.id).order_by('id')
         if request.GET.get('recipes_limit'):
             recipes_limit = int(request.GET.get('recipes_limit'))
             queryset = Recipe.objects.filter(author__id=obj.id).order_by('id')[
                 :recipes_limit]
-        else:
-            queryset = Recipe.objects.filter(author__id=obj.id).order_by('id')
         return ShortRecipeSerializer(queryset, many=True).data

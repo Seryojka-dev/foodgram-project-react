@@ -1,6 +1,5 @@
 from django.core.validators import MinValueValidator
 from django.db import models
-
 from users.models import User
 
 
@@ -10,13 +9,13 @@ class Ingredient(models.Model):
         verbose_name='Название',
         help_text='Введите название ингредиентов')
     measurement_unit = models.CharField(
-        max_length=200,
+        max_length=25,
         verbose_name='Единицы измерения',
         help_text='Введите единицы измерения')
 
     class Meta:
         verbose_name = 'Ингредиент'
-        verbose_name_plural = 'Ингредиент'
+        verbose_name_plural = 'Ингредиенты'
 
     def __str__(self):
         return self.name
@@ -40,11 +39,11 @@ class Tag(models.Model):
         (YELLOW, 'Желтый'),
         (RED, 'Красный'),
     ]
-    name = models.CharField(max_length=200, unique=True,
+    name = models.CharField(max_length=25, unique=True,
                             verbose_name='Название тега')
     color = models.CharField(max_length=7, unique=True, choices=COLOR_CHOICES,
                              verbose_name='Цвет в HEX')
-    slug = models.SlugField(max_length=200, unique=True,
+    slug = models.SlugField(max_length=25, unique=True,
                             verbose_name='Уникальный слаг')
 
     class Meta:
@@ -88,7 +87,7 @@ class Recipe(models.Model):
         through='TagRecipe',
         verbose_name='Тег рецепта',
         help_text='Выберите тег рецепта')
-    cooking_time = models.IntegerField(
+    cooking_time = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1)],
         verbose_name='Время приготовления',
         help_text='Введите время приготовления'
@@ -134,7 +133,7 @@ class ShoppingCart(models.Model):
         return f'{self.user} {self.recipe}'
 
 
-class Subscribe(models.Model):
+class Subscription(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -178,13 +177,13 @@ class IngredientAmount(models.Model):
     )
     amount = models.IntegerField(
         default=1,
-        validators=[MinValueValidator(1)],
+        validators=[MinValueValidator(0.1)],
         verbose_name='Количество ингредиента',
         help_text='Введите количество ингредиента'
     )
 
     class Meta:
-        verbose_name = 'Ингредиенты в рецепте'
+        verbose_name = 'Ингредиент в рецепте'
         verbose_name_plural = 'Ингредиенты в рецепте'
         constraints = [
             models.UniqueConstraint(fields=['ingredient', 'recipe'],
@@ -209,7 +208,7 @@ class TagRecipe(models.Model):
         help_text='Выберите рецепт')
 
     class Meta:
-        verbose_name = 'Теги рецепта'
+        verbose_name = 'Тег рецепта'
         verbose_name_plural = 'Теги рецепта'
         constraints = [
             models.UniqueConstraint(fields=['tag', 'recipe'],

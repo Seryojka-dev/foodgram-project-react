@@ -5,21 +5,25 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
+from recipes.models import (
+    Favorite, Ingredient, IngredientAmount, Recipe,
+    ShoppingCart, Subscription, Tag,
+)
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-
 from users.models import User
-from recipes.models import (Favorite, Ingredient, IngredientAmount, Recipe,
-                            ShoppingCart, Subscribe, Tag)
-from .filters import SearchIngredientFilter, RecipeFilters
-from .serializers import (FavoriteSerializer, IngredientSerializer,
-                          RecipeSerializer, RecipeSerializerPost,
-                          RegistrationSerializer, ShoppingCartSerializer,
-                          SubscriptionSerializer, TagSerializer)
+
+from .mixins import BaseFavoriteCartViewSetMixin
+from .filters import RecipeFilter, SearchIngredientFilter
+from .serializers import (
+    FavoriteSerializer, IngredientSerializer, RecipeSerializer,
+    RecipeSerializerPost, RegistrationSerializer, ShoppingCartSerializer,
+    SubscriptionSerializer, TagSerializer,
+)
 
 
 class CreateUserView(UserViewSet):
@@ -39,7 +43,7 @@ class SubscribeViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         user_id = self.kwargs.get('users_id')
         user = get_object_or_404(User, id=user_id)
-        Subscribe.objects.create(
+        Subscription.objects.create(
             user=request.user, following=user)
         return Response(HTTPStatus.CREATED)
 
@@ -47,7 +51,7 @@ class SubscribeViewSet(viewsets.ModelViewSet):
         author_id = self.kwargs['users_id']
         user_id = request.user.id
         subscribe = get_object_or_404(
-            Subscribe, user__id=user_id, following__id=author_id)
+            Subscription, user__id=user_id, following__id=author_id)
         subscribe.delete()
         return Response(HTTPStatus.NO_CONTENT)
 
@@ -55,7 +59,7 @@ class SubscribeViewSet(viewsets.ModelViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    filter_class = RecipeFilters
+    filter_class = RecipeFilter
     filter_backends = [DjangoFilterBackend, ]
 
     def perform_create(self, serializer):
@@ -65,8 +69,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
         if self.request.method == 'GET':
             return RecipeSerializer
-        else:
-            return RecipeSerializerPost
+        return RecipeSerializerPost
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -84,31 +87,13 @@ class IngredientViewSet(viewsets.ModelViewSet):
     search_fields = ['^name', ]
 
 
-class BaseFavoriteCartViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def create(self, request, *args, **kwargs):
-        recipe_id = int(self.kwargs['recipes_id'])
-        recipe = get_object_or_404(Recipe, id=recipe_id)
-        self.model.objects.create(
-            user=request.user, recipe=recipe)
-        return Response(HTTPStatus.CREATED)
-
-    def delete(self, request, *args, **kwargs):
-        recipe_id = self.kwargs['recipes_id']
-        user_id = request.user.id
-        get_object_or_404(
-            self.model, user__id=user_id, recipe__id=recipe_id).delete()
-        return Response(HTTPStatus.NO_CONTENT)
-
-
-class FavoriteViewSet(BaseFavoriteCartViewSet):
+class FavoriteViewSet(BaseFavoriteCartViewSetMixin):
     serializer_class = FavoriteSerializer
     queryset = Favorite.objects.all()
     model = Favorite
 
 
-class ShoppingCartViewSet(BaseFavoriteCartViewSet):
+class ShoppingCartViewSet(BaseFavoriteCartViewSetMixin):
     serializer_class = ShoppingCartSerializer
     queryset = ShoppingCart.objects.all()
     model = ShoppingCart
