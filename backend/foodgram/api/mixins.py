@@ -1,10 +1,11 @@
 from http import HTTPStatus
 from django.shortcuts import get_object_or_404
+from rest_framework import serializers, permissions, viewsets
+from rest_framework.response import Response
+
 from recipes.models import (
     Favorite, Recipe, ShoppingCart, Subscription,
 )
-from rest_framework import serializers, permissions, viewsets
-from rest_framework.response import Response
 
 
 class CommonSubscribedMixin(metaclass=serializers.SerializerMetaclass):

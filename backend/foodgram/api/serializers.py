@@ -1,13 +1,15 @@
+from accessify import private
 from django.shortcuts import get_object_or_404
 from djoser.serializers import UserCreateSerializer
 from drf_extra_fields.fields import Base64ImageField
+from rest_framework import serializers
+
 from recipes.models import (
     Ingredient, IngredientAmount, Recipe, Tag, TagRecipe,
 )
 from .mixins import (
     CommonSubscribedMixin, CommonRecipeMixin, CommonCountMixin,
 )
-from rest_framework import serializers
 from users.models import User
 
 
@@ -125,8 +127,10 @@ class RecipeSerializerPost(serializers.ModelSerializer,
                     'Данные ингредиенты повторяются в рецепте!')
             ingredients_list.append(ingredient_to_check)
         return ingredients
-
-    def add_tags_and_ingredients(self, tags_data, ingredients, recipe):
+    
+    @private
+    @staticmethod
+    def add_tags_and_ingredients(tags_data, ingredients, recipe):
         for tag_data in tags_data:
             recipe.tags.add(tag_data)
         ingredient_list = []

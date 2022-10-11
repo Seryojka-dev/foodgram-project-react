@@ -5,17 +5,15 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
+from rest_framework import permissions, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
+
+from users.models import User
 from recipes.models import (
     Favorite, Ingredient, IngredientAmount, Recipe,
     ShoppingCart, Subscription, Tag,
 )
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfgen import canvas
-from rest_framework import permissions, viewsets
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from users.models import User
 
 from .mixins import BaseFavoriteCartViewSetMixin
 from .filters import RecipeFilter, SearchIngredientFilter
@@ -24,6 +22,7 @@ from .serializers import (
     RecipeSerializerPost, RegistrationSerializer, ShoppingCartSerializer,
     SubscriptionSerializer, TagSerializer,
 )
+from .services import shoping_list
 
 
 class CreateUserView(UserViewSet):
@@ -70,6 +69,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if self.request.method == 'GET':
             return RecipeSerializer
         return RecipeSerializerPost
+    
+    @action(detail=False, methods=['get'],)
+    def download_shoping_cart(self, request):
+        
+        final_list = IngredientAmount.objects.filter(
+            recipe__shoppingcarts__user=request.user).values(
+            'ingredient__name', 'ingredient__measurement_unit').order_by(
+                'ingredient__name').annotate(ingredient_total=Sum('amount'))
+        response = shoping_list(final_list)
+        return response
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -97,36 +106,3 @@ class ShoppingCartViewSet(BaseFavoriteCartViewSetMixin):
     serializer_class = ShoppingCartSerializer
     queryset = ShoppingCart.objects.all()
     model = ShoppingCart
-
-
-class DownloadShoppingCart(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated]
-
-    @action(detail=False, methods=['get'],)
-    def download(self, request):
-        final_list = IngredientAmount.objects.filter(
-            recipe__shoppingcarts__user=request.user).values(
-            'ingredient__name', 'ingredient__measurement_unit').order_by(
-                'ingredient__name').annotate(ingredient_total=Sum('amount'))
-        pdfmetrics.registerFont(
-            TTFont('FreeSans', 'data/FreeSans.ttf', 'UTF-8'))
-        response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = ('attachment; '
-                                           'filename="shopping_cart.pdf"')
-        page = canvas.Canvas(response)
-        page.setFont('FreeSans', size=20)
-        page.drawString(250, 800, 'Список покупок')
-        page.setFont('FreeSans', size=16)
-        height = 750
-        for number, item in enumerate(final_list, start=1):
-            page.drawString(
-                75,
-                height,
-                f'{number}.  {item["ingredient__name"]} - '
-                f'{item["ingredient_total"]}'
-                f' {item["ingredient__measurement_unit"]}'
-            )
-            height -= 30
-        page.showPage()
-        page.save()
-        return response
