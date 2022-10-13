@@ -1,4 +1,3 @@
-from accessify import private
 from django.shortcuts import get_object_or_404
 from djoser.serializers import UserCreateSerializer
 from drf_extra_fields.fields import Base64ImageField
@@ -127,10 +126,9 @@ class RecipeSerializerPost(serializers.ModelSerializer,
                     'Данные ингредиенты повторяются в рецепте!')
             ingredients_list.append(ingredient_to_check)
         return ingredients
-    
-    @private
+
     @staticmethod
-    def add_tags_and_ingredients(tags_data, ingredients, recipe):
+    def __add_tags_and_ingredients(tags_data, ingredients, recipe):
         for tag_data in tags_data:
             recipe.tags.add(tag_data)
         ingredient_list = []
@@ -148,7 +146,7 @@ class RecipeSerializerPost(serializers.ModelSerializer,
         tags_data = validated_data.pop('tags')
         ingredients = validated_data.pop('ingredientamount')
         recipe = Recipe.objects.create(**validated_data)
-        self.add_tags_and_ingredients(tags_data, ingredients, recipe)
+        self.__add_tags_and_ingredients(tags_data, ingredients, recipe)
         return recipe
 
     def update(self, instance, validated_data):
@@ -156,7 +154,7 @@ class RecipeSerializerPost(serializers.ModelSerializer,
         ingredients = validated_data.pop('ingredientamount')
         TagRecipe.objects.filter(recipe=instance).delete()
         IngredientAmount.objects.filter(recipe=instance).delete()
-        instance = self.add_tags_and_ingredients(
+        instance = self.__add_tags_and_ingredients(
             tags_data, ingredients, instance)
         super().update(instance, validated_data)
         return instance
@@ -180,9 +178,7 @@ class SubscriptionSerializer(serializers.ModelSerializer,
 
     def get_recipes(self, obj):
         request = self.context.get('request')
-        queryset = Recipe.objects.filter(author__id=obj.id).order_by('id')
-        if request.GET.get('recipes_limit'):
-            recipes_limit = int(request.GET.get('recipes_limit'))
-            queryset = Recipe.objects.filter(author__id=obj.id).order_by('id')[
-                :recipes_limit]
+        recipes_limit = int(request.GET.get('recipes_limit'))
+        queryset = Recipe.objects.filter(author__id=obj.id).order_by('id')[
+            :recipes_limit]
         return ShortRecipeSerializer(queryset, many=True).data

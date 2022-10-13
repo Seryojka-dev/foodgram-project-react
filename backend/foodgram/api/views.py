@@ -1,7 +1,6 @@
 from http import HTTPStatus
 
 from django.db.models import Sum
-from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
@@ -9,12 +8,11 @@ from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from users.models import User
+from users.models import User, Subscription
 from recipes.models import (
     Favorite, Ingredient, IngredientAmount, Recipe,
-    ShoppingCart, Subscription, Tag,
+    ShoppingCart, Tag,
 )
-
 from .mixins import BaseFavoriteCartViewSetMixin
 from .filters import RecipeFilter, SearchIngredientFilter
 from .serializers import (
@@ -22,7 +20,7 @@ from .serializers import (
     RecipeSerializerPost, RegistrationSerializer, ShoppingCartSerializer,
     SubscriptionSerializer, TagSerializer,
 )
-from .services import shoping_list
+from .services import create_shoping_list
 
 
 class CreateUserView(UserViewSet):
@@ -69,15 +67,15 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if self.request.method == 'GET':
             return RecipeSerializer
         return RecipeSerializerPost
-    
+
     @action(detail=False, methods=['get'],)
     def download_shoping_cart(self, request):
-        
+
         final_list = IngredientAmount.objects.filter(
             recipe__shoppingcarts__user=request.user).values(
             'ingredient__name', 'ingredient__measurement_unit').order_by(
                 'ingredient__name').annotate(ingredient_total=Sum('amount'))
-        response = shoping_list(final_list)
+        response = create_shoping_list(final_list)
         return response
 
 

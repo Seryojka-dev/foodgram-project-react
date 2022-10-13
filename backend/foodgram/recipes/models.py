@@ -134,34 +134,6 @@ class ShoppingCart(models.Model):
         return f'{self.user} {self.recipe}'
 
 
-class Subscription(models.Model):
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='follower',
-        verbose_name='Пользователь',
-        help_text='Выберите пользователя, который подписывается'
-    )
-    following = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='following',
-        verbose_name='Автор',
-        help_text='Выберите автора, на которого подписываются'
-    )
-
-    class Meta:
-        verbose_name = 'Подписка'
-        verbose_name_plural = 'Подписки'
-        constraints = [
-            models.UniqueConstraint(fields=['user', 'following'],
-                                    name='unique_subscribe')
-        ]
-
-    def __str__(self):
-        return f'{self.user} {self.following}'
-
-
 class IngredientAmount(models.Model):
     ingredient = models.ForeignKey(
         Ingredient,
