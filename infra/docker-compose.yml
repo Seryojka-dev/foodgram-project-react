@@ -10,6 +10,7 @@ services:
 
   backend:
     image: kolobaha/foodgram:latest
+    
     restart: always
     volumes:
       - static_value:/app/backend_static/
