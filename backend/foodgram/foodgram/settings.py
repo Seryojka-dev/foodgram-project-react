@@ -28,7 +28,7 @@ INSTALLED_APPS = [
     'api.apps.ApiConfig',
     'recipes.apps.RecipesConfig',
     'colorfield',
-    
+
 ]
 
 MIDDLEWARE = [

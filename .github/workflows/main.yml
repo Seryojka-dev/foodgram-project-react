@@ -55,8 +55,8 @@ jobs:
             sudo docker-compose up -d --build
             sudo docker-compose exec backend python manage.py makemigrations
             sudo docker-compose exec backend python manage.py migrate
-            sudo docker-compose exec backend python manage.py add_igridiensts_db
-            sudo docker-compose exec backend python manage.py add_tags_db
+            sudo docker-compose exec backend python manage.py ingredients_db
+            sudo docker-compose exec backend python manage.py tags_db
             sudo docker-compose exec backend python manage.py collectstatic --noinput
  
   send_message:
