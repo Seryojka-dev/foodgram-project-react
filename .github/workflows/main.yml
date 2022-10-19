@@ -25,9 +25,8 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: backend/foodgram
-          # file: backend/foodgram/Dockerfile
           push: true
-          tags: kolobaha/foodgram:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/foodgram:latest
 
   deploy:
     runs-on: ubuntu-latest
