@@ -8,6 +8,7 @@ from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from .services import create_shoping_list
 from users.models import User, Subscription
 from recipes.models import (
     Favorite, Ingredient, IngredientAmount, Recipe,
@@ -20,7 +21,6 @@ from .serializers import (
     RecipeSerializerPost, RegistrationSerializer, ShoppingCartSerializer,
     SubscriptionSerializer, TagSerializer,
 )
-from .services import create_shoping_list
 
 
 class CreateUserView(UserViewSet):
@@ -63,20 +63,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user)
 
     def get_serializer_class(self):
-
         if self.request.method == 'GET':
             return RecipeSerializer
         return RecipeSerializerPost
 
     @action(detail=False, methods=['get'],)
     def download_shoping_cart(self, request):
-
         final_list = IngredientAmount.objects.filter(
             recipe__shoppingcarts__user=request.user).values(
             'ingredient__name', 'ingredient__measurement_unit').order_by(
                 'ingredient__name').annotate(ingredient_total=Sum('amount'))
-        response = create_shoping_list(final_list)
-        return response
+        return create_shoping_list(final_list)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):

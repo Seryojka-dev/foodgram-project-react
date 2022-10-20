@@ -30,3 +30,4 @@ def create_shoping_list(final_list):
         height -= 30
     page.showPage()
     page.save()
+    return response
