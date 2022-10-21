@@ -5,7 +5,7 @@
 ## Установка локально
 1. Склонируйте репозиторий:
     ```
-    git clone git@github.com:pikhenko/foodgram-project-react.git
+    git clone git@github.com:Seryojka-dev/foodgram-project-react.git
     ```
 
 
